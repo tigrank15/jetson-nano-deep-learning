@@ -1,0 +1,262 @@
+\documentclass[letter, 12pt]{article}
+
+\input{preamble.tex}
+
+\begin{document}
+	
+	\begin{titlepage}
+		\thispagestyle{empty}
+		\begin{center}
+			\large San Francisco State University \\
+			School of Engineering
+		\end{center}
+		\vspace*{\fill}
+		
+		\begin{center}
+			\textbf{\LARGE Hello AI World} \vspace{1.5ex}\\
+			\textbf{\LARGE With NVIDIA Jetson Nano 2GB} \vspace{1ex}\\
+			\Large SFSU Bioelectronics Laboratory \\
+			\Large By: Tigran Kurkchiyants \\
+			
+			\today
+		\end{center}
+		
+		\vfill
+	\end{titlepage}
+	
+	\newpage
+	\tableofcontents
+	\addtocontents{toc}
+	
+	
+	\newpage
+	
+	\section{Introduction} \label{introduction}
+	\noindent The purpose of this guide is to provide instructions on using the principles of computer vision and machine learning to build and train deep neural networks using NVIDIA Jetson Nano 2GB Developer Kit. Jetson Nano is a smal and powerful edge device that processes neural networks with its 128-core graphics processing unit (GPU). Like many other microprocessors, Jetson Nano runs the Ubuntu operating system, which is provided by NVIDIA in its JetPack (software development kit for AI applications). 
+	\vspace{1ex} \\
+	\vspace{1ex} \\
+	This guide mainly focuses on two types of image recognition: classification and detection. The former one, as the name suggests, is used to classify an object and the latter type is used to detect an object and draw a bounding box around it. In our case, we will be running real-time inference using a camera module. In other words, we will connect a camera, and it will classify and detect whatever objects we train our models on. There are other ways of running inference such as having a set of pictures or videos from the internet but we will use a camera to make it a little bit more interactive.  
+ 	\vspace{1ex} \\
+	\vspace{1ex} \\
+	While training our own models, transfer learning will be used on deep neural networks (DNN). This means that we will take already pre-trained models and add our custom data to it making it more specific for our implementation. Transfer learning makes training much easier and faster than training a model from scratch, which is a very computationally- and time-expensive process. Additional information on types of image recognition can be found \href{https://github.com/dusty-nv/jetson-inference/#pre-trained-models}{here}.
+	
+	\section{Setting Up Jetson Nano}
+	\subsection{JetPack Overview} \label{jetPackOverview}
+	\noindent To set up Jetson Nano, we have to download NVIDIA JetPack, which is a comprehensive Software Development Kit (SDK) for developing and deploying AI applications. JetPack is a one-stop package, which simplifies installation of the operating system and all the necessary drivers. It contains the following:
+	% Include the following list in References
+	\begin{itemize}
+		\item \textbf{Operating System.} NVIDIA L4T provides the bootloader, Linux kernel 4.9, necessary firmwares, NVIDIA drivers, sample filesystem based on Ubuntu 18.04, and more.
+		
+		\item \textbf{TensorRT.} TensorRT is a high performance deep learning inference runtime for image classification, segmentation, and object detection neural networks. TensorRT is built on CUDA, NVIDIA’s parallel programming model, and enables you to optimize inference for all deep learning frameworks.
+		
+		\item \textbf{cuDNN.} CUDA Deep Neural Network library provides high-performance primitives for deep learning frameworks. It provides highly tuned implementations for standard routines such as forward and backward convolution, pooling, normalization, and activation layers.
+		
+		\item \textbf{CUDA.} CUDA Toolkit provides a comprehensive development environment for C and C++ developers building GPU-accelerated applications. The toolkit includes a compiler for NVIDIA GPUs, math libraries, and tools for debugging and optimizing the performance of your applications.
+		
+		\item \textbf{Multimedia API.} The Jetson Multimedia API package provides low level APIs for flexible application development.
+		
+		\item \textbf{Computer Vision.} Computer vision library, visual computing applications.
+		
+		\item \textbf{Developer Tools.} CUDA Toolkit provides a comprehensive development environment for C and C++ developers building high-performance GPU-accelerated applications with CUDA libraries.
+	\end{itemize}
+	\noindent Download NVIDIA SDK \href{https://developer.nvidia.com/jetson-nano-sd-card-image}{here}.
+	
+	\subsection{Flashing the OS}
+	\noindent In order to install the operating system on Jetson Nano, we will have to flash a microSD card with the SDK file we have downloaded in Section \ref{jetPackOverview}. To prepare the microSD card, you will need a computer with the internet connection and the ability to read and write SD cards, such as a built-in SD card reader or an adapter. Steps for writing the image of the SDK are slightly different depending on what operating system you are using. Steps for Windows, MacOS, and Linux can be found on the official NVIDIA page \href{https://developer.nvidia.com/embedded/learn/get-started-jetson-nano-2gb-devkit#prepare}{here}. Once you open the link, navigate to the ``Write Image to the microSD Card'' tab on the left-hand side, where you will find instructions for the three operating systems. Follow the instructions and once the flashing process is done, proceed to the next section.
+	
+	\subsection{First Boot}
+	\noindent \begin{enumerate}
+		\item Insert the microSD card (with system image already written to it) into the slot underneath the Jetson Nano module.
+		\item Set the device on a desk or the paper box it came in. 
+		\item Turn on a monitor and connect it to the Nano. Also connect a USB keyboard, mouse, Wi-Fi adapter, and a Raspberry Pi or USB camera.
+		\item Connect your DC power supply to the Jetson Nano. The device will power on and boot automatically. A green LED next to the Micro-USB connector will light as soon as the developer kit powers on. When you boot the first time, the developer kit will take you through some initial setup, including:
+		\begin{itemize}
+			\item Review and accept NVIDIA Jetson software EULA
+			\item Select system language, keyboard layout, and time zone
+			\item Create username, password, and computer name
+			\item Optionally configure wireless networking
+			\item Select APP partition size. It is recommended to use the max size suggested
+			\item Create a swap file. It is recommended to create a swap file
+		\end{itemize}
+	\end{enumerate}
+	\noindent After logging in, you will see the home screen. Connect to a Wi-Fi network and at this point, we are ready to clone files from Github.
+	
+	\section{Downloading Files}
+	\noindent Now, that the operating system is installed, we can download necessary libraries and support packages from Github. Open up the terminal and run the following commands:
+	\begin{verbatim}
+		$ git clone --recursive https://github.com/dusty-nv/jetson-inference
+		$ cd jetson-inference
+		$ docker/run.sh
+	\end{verbatim}
+	\noindent As you can see from the last command, we will be using a Docker container because it automatically pulls the correct container tag from DockerHub based on your currently-installed version of JetPack-L4T. This way, the Docker container will automatically download all additional packages and libraries we need for deep learning. After running the last command, a window will pop up, which will ask you to select which pre-trained models to download. We will leave everything as default for now and hit Enter to continue. In the future, you can download more models and experiment with them. At this time, let us see if the camera is recognized and works properly. Run the following commands:
+	\begin{verbatim}
+		$ ls /dev/video*
+		$ video-viewer csi://0
+	\end{verbatim}
+	\noindent If your camera is recognized \footnote{If you are using a USB camera instead of MIPI Raspberry Pi camera module, replace csi://0 with dev/video0 for all commands found in this guide.}, the output of the first command should be something like
+	\begin{verbatim}
+		/dev/video0
+	\end{verbatim}
+	\noindent and the output of the second command will activate your camera. If everything works properly, all setup steps have been done, and we can start running inference and training our own models. If, for some reason, your camera is not detected, check your connection and reboot Jetson Nano. 
+	
+	\section{Object Classification}
+	\subsection{Inference With Pre-Trained Models}
+	\noindent To get your feet wet, let us begin by running a real-time inference on already pre-trained models. We can explore what objects are recognized and play around with them. Full list of objects that the model can recognize can be found \href{https://github.com/dusty-nv/jetson-inference/blob/master/data/networks/ilsvrc12_synset_words.txt}{here}. To classify objects using a default model (GoogleNet in this case), perform the following steps:
+	\begin{enumerate}
+		\item Open the terminal
+		\item Run the following commands:
+		\begin{verbatim}
+			$ cd jetson-inference/
+			$ docker/run.sh
+			$ imagenet csi://0
+		\end{verbatim}
+	\end{enumerate}
+	% Add a foot note about commands with USB webcams
+	
+	\subsection{Inference With Custom Models}
+	\noindent Now, let us train our own model for image classification. As mentioned in \textbf{Introduction} (Section \ref{introduction}), we will use transfer learning to train our model, which is essentially loading the pre-trained model and adding our custom dataset to it. There are many ways of collecting custom datasets. For example, we can download images from the internet or take our own using the Raspberry Pi camera module. Since we have a camera, let us proceed with the latter option. To collect our own images, the Github repo provides ``camera-capture'' tool for capturing and labeling images on Jetson Nano from live video.
+	To start collecting images, open the terminal and run the following commands:
+	\begin{verbatim}
+		$ cd jetson-inference
+		$ docker/run.sh
+		$ cd python/training/classification
+		$ camera-capture csi://0 
+	\end{verbatim}
+	Feel free to select whatever objects you have at hand. In this case, I will use several tools I have found around the house. Before we start taking pictures of them, we have to create a folder with a .txt file in it. Do the following:
+	\begin{enumerate}
+		\item Open up file explorer and navigate to \vspace{1.5ex} \\
+		jetson-inference/python/training/classification/data 
+		\item Create a new folder named \textbf{tools}
+		\item Inside the \textbf{tools} folder, right-click and choose Create New $\rightarrow$ Empty File. Name the new file \textbf{labels.txt}
+		\newpage
+		\item Double click on \textbf{labels.txt} and write all classes we intend to train on in alphabetical order. It is paramount that the labels are alphabetized, otherwise, objects will not be correctly classified. For example, my \textbf{labels.txt} looks like the following:
+		\begin{itemize}[label={}]
+			\item background
+			\item drill
+			\item hammer
+			\item screwdriver
+		\end{itemize}
+	\end{enumerate}
+	\noindent Now, in the camera capture window, leave Dataset Type as Classification but set Dataset Path to the \textbf{tools} folder. For Class Labels, choose \textbf{labels.txt} that you have created. At this point, we are ready to start taking pictures. For best results, it is recommended to take several pictures of an object in the same position. I will take 100 pictures for each class for train, 20 and 20 for val and test respectively (total of 560 pictures). For best results, it is suggested to follow the 80--10--10 rule: 80\% of pictures should be in \textbf{train}, 10\% in \textbf{val}, and another 10\% in \textbf{test}.
+
+	\noindent The tool will create datasets with the following directory structure on the disk:
+	\begin{itemize}
+		\item train/
+		\begin{itemize}
+			\item class-A/
+			\item class-B/
+			\item $\dots$
+		\end{itemize}
+		\item val/
+		\begin{itemize}
+			\item class-A/
+			\item class-B/
+			\item $\dots$
+		\end{itemize}
+		\item test/
+		\begin{itemize}
+			\item class-A/
+			\item class-B/
+			\item $\dots$
+		\end{itemize}
+	\end{itemize}
+	where class-A and class-B are subdirectories containing the data for each object class that you have defined in a class label file.
+	\vspace{1ex} \\
+	\noindent Once all data is collected, within the Docker container in the termial window, run the following command:
+	\begin{verbatim}
+		$ cd jetson-inference/python/training/classification
+	\end{verbatim}
+	\noindent This will take you to the classification folder, in which you can start training your custom model. To do so, run the following:
+	\begin{verbatim}
+		$ python3 train.py --model-dir=models/tools --batch-size=4 --workers=1 data/tools
+	\end{verbatim}
+	\noindent Depending on the size of the dataset, training can take a while. Once the model is trained, the next step is to convert it into ONNX formate so that it can be used by TensorRT for inference. To export the model into ONNX, run the following: 
+	\begin{verbatim}
+		$ python3 onnx_export.py --model-dir=models/tools
+	\end{verbatim}
+	\noindent Once this step is done, we can run inference in real time using the following command:
+	\begin{verbatim}
+		$ imagenet --model=models/tools/resnet18.onnx --labels=data/tools/labels.txt \
+		--input_blob=input_0 --output_blob=output_0 csi://0
+	\end{verbatim}
+	This command is pretty long so pay attention to spelling and spaces. The $\backslash$ sign indicates a new line but the command can be written in one line. 
+
+	\section{Object Detection}
+	\subsection{Inference With Pre-Trained Models}
+	\noindent Just like with object classification, we have downloaded pre-trained models for object detection. Specifically, the network that is used in this case is SSD-Mobilenet. SSD-Mobilenet is a popular network architecture for real-time object detection on mobile and embedded devices. To perform object detection with a pre-trained model, run the following commands:
+	\begin{verbatim}
+		$ cd jetson-inference
+		$ docker/run.sh
+		$ detectnet.py csi://0
+	\end{verbatim}
+	\noindent Feel free to experiment with whatever objects you have at hand and see what objects the model can recognize. Full list of classes that are recognized can be found \href{https://github.com/dusty-nv/pytorch-ssd/blob/master/open_images_classes.txt}{here}.
+
+	\subsection{Inference With Custom Models}
+	\noindent Now, that we have played around with the pre-trained model, let us create our own. Like with object classification, we will train our own model with a custom data set and test it using the Raspberry Pi camera module. To start collecting data, do the following:
+	\begin{enumerate}
+		\item Open up the terminal and navigate yourself to jetson-inference/ 
+		\item Run the following commands:
+		\begin{verbatim}
+			$ cd jetson-inference
+			$ docker/run.sh
+			$ camera-capture csi://0
+		\end{verbatim}
+		\item Open the file explorer, and go to jetson-inference $\rightarrow$ python $\rightarrow$ training $\rightarrow$ detection $\rightarrow$ ssd $\rightarrow$ data.
+		\item Create a new folder. I will name mine \textbf{tools}. Within the \textbf{tools} folder, create \textbf{labels.txt} like you did in the classification training. Populate \textbf{labels.txt} with classes in alphabetical order. For example, my \textbf{labels.txt} looks like the following:
+		\begin{itemize}[label={}]
+			\item drill
+			\item hammer
+			\item screwdriver
+		\end{itemize}
+		\item In the camera capture window, choose Detection in the Dataset Type, select Dataset path to data/tools, and select the labels.txt file for Class Labels.  
+	\end{enumerate}
+	
+	\noindent At this point we are ready start collecting data. Place an object in front of the camera. For data collection, make sure ``Save on Unfreeze'' is checked, ``Clear on Unfreeze'' is unchecked, and ``Merge Sets'' is checked. Whenever ready, click the ``Freeze/Edit'' button. The live camera will become frozen, and you will be able to draw a bounding box around the object. You can select the appropriate object class for each bounding box in the grid table in the control view. When you are done labeling the image, click the depressed ``Freeze/Edit'' button again to save data and unfreeze the camera view for the next image. It is important to collect images from varying orientations, camera viewpoints, and lighting conditions to make the model as robust as possible. If you find that your model is not performing as well as you would like, try adding more training data and playing around with conditions. I will collect 100 images for each class, so 300 images total. Once all images are taken, we can close the camera capture window.
+	\vspace{1ex} \\
+	\noindent To train the model, run the following commands:
+	\begin{verbatim}
+		$ python3 train_ssd.py --dataset-type=voc --data=data/tools \
+		--model-dir=models/tools --batch-size=2 --workers=1
+	\end{verbatim}
+	\noindent Training the model will take some time. Once it is complete, we will export the model into ONNX format by running the following command:
+	\begin{verbatim}
+		$ python3 onnx_export.py --model-dir=models/tools
+	\end{verbatim}
+	\noindent Once the model is converted into ONNX, run the following command to perform real-time inference:
+	\begin{verbatim}
+		$ detectnet --model=models/tools/ssd-mobilenet.onnx \
+		--labels=models/tools/labels.txt --input_blob=input_0 --output-cvg=scores \
+		--output-bbox=boxes csi://0
+	\end{verbatim}
+	
+	\newpage
+	\section{Appendix}
+	\noindent Below are some useful commands and additional code:
+	\begin{enumerate}
+		\item imagenet.py for object classification can be found \href{https://github.com/dusty-nv/jetson-inference/blob/master/python/examples/imagenet.py}{here}.
+		\item detectnet.py for object detection can be found \href{https://github.com/dusty-nv/jetson-inference/blob/master/python/examples/detectnet.py}{here}.
+		\item To check for all video devices connected to the Jetson Nano, run the following command:
+		\begin{verbatim}
+			$ ls /dev/video*
+		\end{verbatim}
+	\end{enumerate}
+	
+	\newpage
+	\section{Bill Of Materials}
+	\noindent Listed below are all the necessary items for this project:
+	\begin{enumerate}
+		\item NVIDIA Jetson Nano 2GB Developer Kit (\href{https://www.amazon.com/gp/product/B08J157LHH/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1}{purchase link})
+		\item Raspberry Pi v.2 Camera Module (\href{https://www.amazon.com/gp/product/B01ER2SKFS/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1}{purchase link})
+		\item CanaKit Raspberry Pi USB-C Power Supply \href{https://www.amazon.com/CanaKit-Raspberry-Power-Supply-USB-C/dp/B07TYQRXTK/ref=sr_1_4?crid=2DKOJXC3JNR55&dchild=1&keywords=raspberry+pi+power+supply&qid=1623127404&sprefix=raspberry+pi+power+%2Caps%2C230&sr=8-4}{(purchase link)}
+		\item Samsung 32GB microSD (\href{https://www.amazon.com/Samsung-MicroSDHC-Adapter-MB-ME32GA-AM/dp/B06XWN9Q99/ref=sr_1_3?dchild=1&keywords=samsung+micro+sd+card+32gb&qid=1623127502&sr=8-3}{purchase link})
+		\item (Optional) 5~V Noctua DC fan (\href{https://www.amazon.com/Noctua-NF-A4x20-5V-PWM-Premium-Quality/dp/B071FNHVXN/ref=sr_1_14?dchild=1&keywords=Jetson+Nano+fan&qid=1623127615&sr=8-14}{purchase link})
+	\end{enumerate}
+	\noindent In case you decide to purchase a DC fan for extra cooling, instructions for enabling it can be found on the Github page \href{https://github.com/Pyrestone/jetson-fan-ctl}{here}.
+	
+	\newpage
+	\section{References}
+	\begin{enumerate}
+		\item \textit{Hello AI World}, NVIDIA Corporation, \href{https://github.com/dusty-nv/jetson-inference/#pre-trained-models}{access link}.
+		\item \textit{Image segmentation, Object detection and Optimizing efficiency with Custom datasets}, Dhruva Krishna, \href{https://sfsu.box.com/s/7sculhqpedx7zvrq7k60w97uwzy7r0gu}{access link}.
+	\end{enumerate}
+\end{document}
